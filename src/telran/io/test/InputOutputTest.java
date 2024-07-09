@@ -65,43 +65,43 @@ class InputOutputTest {
 	}
 	@Test
 	void printDirectoryTest() throws IOException {
-		printDirectory("..", 3);
+		printDirectory("..", 5);
 	}
-	private void printDirectory(String dirPathStr, int depth) throws IOException {
-		//TODO
-		//print directory content in the format with offset according to the level
-		//if depth == -1 all levels should be printed out
-		// <name> - <dir / file>
-		//      <name> 
-		//using FIles.walkFileTree
-		Path path = Path.of(dirPathStr).toAbsolutePath().normalize();
-		//TODO
-		Files.walkFileTree(path, new HashSet<>(), depth, new FileVisitor<Path>() {
+	 public void printDirectory(String dirPathStr, int depth) throws IOException {
+	        Path path = Path.of(dirPathStr).toAbsolutePath().normalize();
+	        
+	        Files.walkFileTree(path, new HashSet<>(), depth == -1 ? Integer.MAX_VALUE : depth, new FileVisitor<>() {
 
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				return FileVisitResult.CONTINUE;
-			}
+	            private int getLevel(Path path) {
+	                return path.getNameCount() - path.getRoot().getNameCount();
+	            }
 
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				// TODO Auto-generated method stub
-				return null;
-			}
+	            @Override
+	            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+	                System.out.println("  ".repeat(getLevel(dir)) + dir.getFileName() + " - dir");
+	                return FileVisitResult.CONTINUE;
+	            }
 
-			@Override
-			public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-				// TODO Auto-generated method stub
-				return null;
-			}
+	            @Override
+	            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+	                System.out.println("  ".repeat(getLevel(file)) + file.getFileName() + " - file");
+	                return FileVisitResult.CONTINUE;
+	            }
 
-			@Override
-			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-				// TODO Auto-generated method stub
-				return null;
-			}
-		});
-		
-	}
+	            @Override
+	            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+	                System.err.println("Failed to visit file: " + file + " (" + exc.getMessage() + ")");
+	                return FileVisitResult.CONTINUE;
+	            }
+
+	            @Override
+	            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+	                if (exc != null) {
+	                    System.err.println("Error visiting directory: " + dir + " (" + exc.getMessage() + ")");
+	                }
+	                return FileVisitResult.CONTINUE;
+	            }
+	        });
+	    }
 
 }
