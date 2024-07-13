@@ -1,41 +1,53 @@
 package telran.io;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.io.*;
-import java.nio.file.*;
-import java.util.List;
-import java.util.stream.Collectors;
-
+record SourceCodeComments(Path source, String code, String comments) {}
 public class CodeCommentsSeparation {
 
-    public static void main(String[] args) {
-     
+	public static void main(String[] args) {
+		//args[0] - file path for file containing both Java class code and comments
+		//args[1] - result file with only code
+		//args[2] -result file with only comments
+		// example of args[0] "src/telran/io/test/InputOutputTest.java" 
+		//from one file containing code and comments to create two files
+		//one with only comments and second with only code
+		try {
+			SourceCodeComments scc = processArguments (args);
+			codeCommentsSeparation(scc);
+		} catch (RuntimeException e) {
+			
+			e.printStackTrace();
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+		
+	}
 
-        if (args.length < 3) {
-            System.out.println("Usage: java CodeCommentsSeparation <source file> <code file> <comments file>");
-            return;
-        }
+	private static void codeCommentsSeparation(SourceCodeComments scc) throws Exception {
+		try(BufferedReader reader = Files.newBufferedReader(scc.source());
+				PrintWriter commentsWriter = new PrintWriter(scc.comments());
+				PrintWriter codeWriter = new PrintWriter(scc.code())) {
+			reader.lines().forEach(l -> (l.trim().startsWith("//") ?
+					commentsWriter : codeWriter).println(l));
+		}
+		
+	}
 
-        String sourceFilePath = args[0];
-        String codeFilePath = args[1];
-        String commentsFilePath = args[2];
+	private static SourceCodeComments processArguments (String[] args)throws Exception {
+		if(args.length != 3) {
+			throw new Exception("too few arguments");
+		}
+		Path sourcePath = Path.of(args[0]);
+		
+		if (!Files.exists(sourcePath)) {
+			throw new Exception(String.format("%s doesn't exist",
+					sourcePath.toAbsolutePath().normalize()));
+		}
+		
+		return new SourceCodeComments(sourcePath, args[1], args[2]);
+	}
 
-        try {
-            List<String> lines = Files.readAllLines(Paths.get(sourceFilePath));
-
-            List<String> codeLines = lines.stream()
-                .filter(line -> !line.trim().startsWith("//") && !line.trim().startsWith("/*") && !line.trim().contains("*/"))
-                .collect(Collectors.toList());
-
-            List<String> commentLines = lines.stream()
-                .filter(line -> line.trim().startsWith("//") || line.trim().startsWith("/*") || line.trim().contains("*/"))
-                .collect(Collectors.toList());
-
-            Files.write(Paths.get(codeFilePath), codeLines);
-            Files.write(Paths.get(commentsFilePath), commentLines);
-
-            System.out.println("Separation complete. Code and comments have been written to separate files.");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }
